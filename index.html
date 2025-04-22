@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-Image Generation with Diffusion Models</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #ddd;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .input-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .output-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .image-output {
+            width: 512px;
+            height: 512px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .image-output img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #a777e3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .generation-info {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .sample-prompts {
+            margin-top: 20px;
+        }
+        
+        .sample-prompt-btn {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .sample-prompt-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .process-visualization {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .process-step {
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .process-step img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .info-section {
+            margin-top: 40px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Text-to-Image Generation with Diffusion Models</h1>
+        <p>Experience the power of AI to transform your text descriptions into images</p>
+    </header>
+    
+    <div class="app-container">
+        <div class="input-section">
+            <h2>Generate Your Image</h2>
+            
+            <label for="prompt">Text Prompt:</label>
+            <textarea id="prompt" placeholder="Describe the image you want to generate...">A serene landscape with mountains, a lake, and a sunset sky with vibrant colors</textarea>
+            
+            <label for="negative-prompt">Negative Prompt (what to avoid):</label>
+            <textarea id="negative-prompt" placeholder="Elements you want to avoid in the image...">people, buildings, text, blurry, low quality</textarea>
+            
+            <label for="guidance-scale">Guidance Scale:</label>
+            <input type="range" id="guidance-scale" min="1" max="15" step="0.5" value="7.5">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Low Adherence (1.0)</span>
+                <span id="guidance-value">7.5</span>
+                <span>High Adherence (15.0)</span>
+            </div>
+            
+            <label for="steps">Inference Steps:</label>
+            <input type="range" id="steps" min="10" max="100" step="5" value="30">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Faster (10)</span>
+                <span id="steps-value">30</span>
+                <span>Higher Quality (100)</span>
+            </div>
+            
+            <div class="sample-prompts">
+                <p><strong>Try these sample prompts:</strong></p>
+                <button class="sample-prompt-btn" data-prompt="A cyberpunk cityscape at night with neon lights and flying cars">Cyberpunk City</button>
+                <button class="sample-prompt-btn" data-prompt="An enchanted forest with magical creatures and glowing plants">Enchanted Forest</button>
+                <button class="sample-prompt-btn" data-prompt="A futuristic space station orbiting a ringed planet">Space Station</button>
+            </div>
+            
+            <button id="generate-btn">Generate Image</button>
+            
+            <div class="loading">
+                <div class="loader"></div>
+                <p>Generating your image... This may take a few moments.</p>
+            </div>
+        </div>
+        
+        <div class="output-section">
+            <h2>Generated Image</h2>
+            
+            <div class="image-output">
+                <img id="output-image" src="/api/placeholder/512/512" alt="Generated image will appear here">
+            </div>
+            
+            <div class="generation-info">
+                <p><strong>Prompt:</strong> <span id="info-prompt">None yet</span></p>
+                <p><strong>Settings:</strong> Guidance: <span id="info-guidance">7.5</span>, Steps: <span id="info-steps">30</span></p>
+                <p><strong>Generation Time:</strong> <span id="info-time">N/A</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <h2>How Diffusion Models Work</h2>
+        
+        <p>Diffusion models generate images by gradually removing noise from a completely random image, guided by your text description. The process works like this:</p>
+        
+        <div class="process-visualization">
+            <div class="process-step">
+                <img src="/api/placeholder/200/150" alt="Pure noise">
+                <p>Start with pure noise</p>
+            </div>
+            <div class="process-step">
+                <img src="/api/placeholder/200/150" alt="Early denoising">
+                <p>Begin removing noise</p>
+            </div>
+            <div class="process-step">
+                <img src="/api/placeholder/200/150" alt="Mid denoising">
+                <p>Shapes emerge</p>
+            </div>
+            <div class="process-step">
+                <img src="/api/placeholder/200/150" alt="Late denoising">
+                <p>Details form</p>
+            </div>
+            <div class="process-step">
+                <img src="/api/placeholder/200/150" alt="Final image">
+                <p>Final refined image</p>
+            </div>
+        </div>
+        
+        <h3>Understanding the Controls</h3>
+        
+        <ul>
+            <li><strong>Guidance Scale:</strong> Controls how closely the model follows your text description. Higher values create images that more strictly adhere to your prompt but may produce less varied results.</li>
+            <li><strong>Inference Steps:</strong> Determines how many denoising steps the model takes. More steps generally produce higher quality images but take longer to generate.</li>
+            <li><strong>Negative Prompt:</strong> Specifies elements you want the model to avoid including in the generated image.</li>
+        </ul>
+        
+        <h3>Tips for Better Results</h3>
+        
+        <ul>
+            <li>Be specific and descriptive in your prompts</li>
+            <li>Include artistic style references (e.g., "oil painting," "digital art," "photorealistic")</li>
+            <li>Mention lighting, mood, and composition details</li>
+            <li>Use negative prompts to avoid unwanted elements</li>
+        </ul>
+    </div>
+    
+    <footer>
+        <p>Note: This is a simulation for educational purposes. In a real implementation, this would connect to a Stable Diffusion API.</p>
+        <p>Created for the "Crash Course in Generative AI" assignment</p>
+    </footer>
+
+    <script>
+        // Simulation of image generation - in a real implementation, this would call an API
+        document.addEventListener('DOMContentLoaded', function() {
+            const promptInput = document.getElementById('prompt');
+            const negativePromptInput = document.getElementById('negative-prompt');
+            const guidanceScale = document.getElementById('guidance-scale');
+            const stepsSlider = document.getElementById('steps');
+            const generateBtn = document.getElementById('generate-btn');
+            const outputImage = document.getElementById('output-image');
+            const loadingDiv = document.querySelector('.loading');
+            
+            // Display values
+            const guidanceValue = document.getElementById('guidance-value');
+            const stepsValue = document.getElementById('steps-value');
+            const infoPrompt = document.getElementById('info-prompt');
+            const infoGuidance = document.getElementById('info-guidance');
+            const infoSteps = document.getElementById('info-steps');
+            const infoTime = document.getElementById('info-time');
+            
+            // Update displayed values when sliders change
+            guidanceScale.addEventListener('input', function() {
+                guidanceValue.textContent = this.value;
+            });
+            
+            stepsSlider.addEventListener('input', function() {
+                stepsValue.textContent = this.value;
+            });
+            
+            // Sample prompts
+            const samplePromptBtns = document.querySelectorAll('.sample-prompt-btn');
+            samplePromptBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    promptInput.value = this.getAttribute('data-prompt');
+                });
+            });
+            
+            // Simulate image generation
+            generateBtn.addEventListener('click', function() {
+                // Display loading state
+                loadingDiv.style.display = 'block';
+                generateBtn.disabled = true;
+                
+                // Record start time
+                const startTime = new Date();
+                
+                // Update info display
+                infoPrompt.textContent = promptInput.value;
+                infoGuidance.textContent = guidanceScale.value;
+                infoSteps.textContent = stepsSlider.value;
+                
+                // Simulate API call with timeout based on steps
+                const simulatedProcessingTime = 500 + (parseInt(stepsSlider.value) * 100);
+                
+                setTimeout(function() {
+                    // In a real implementation, this would use the actual generated image
+                    // Here we're using placeholder images based on the prompt text
+                    
+                    // Create a deterministic but varied "seed" from the prompt
+                    let seed = 0;
+                    for (let i = 0; i < promptInput.value.length; i++) {
+                        seed += promptInput.value.charCodeAt(i);
+                    }
+                    
+                    // Simulate different images based on prompt
+                    const width = 512;
+                    const height = 512;
+                    
+                    // Use different placeholder images based on keywords in the prompt
+                    if (promptInput.value.toLowerCase().includes('landscape') || 
+                        promptInput.value.toLowerCase().includes('nature') ||
+                        promptInput.value.toLowerCase().includes('mountain')) {
+                        outputImage.src = `/api/placeholder/${width}/${height}?text=Landscape`;
+                    } else if (promptInput.value.toLowerCase().includes('portrait') ||
+                              promptInput.value.toLowerCase().includes('person') ||
+                              promptInput.value.toLowerCase().includes('face')) {
+                        outputImage.src = `/api/placeholder/${width}/${height}?text=Portrait`;
+                    } else if (promptInput.value.toLowerCase().includes('city') ||
+                              promptInput.value.toLowerCase().includes('urban') ||
+                              promptInput.value.toLowerCase().includes('building')) {
+                        outputImage.src = `/api/placeholder/${width}/${height}?text=City`;
+                    } else if (promptInput.value.toLowerCase().includes('space') ||
+                              promptInput.value.toLowerCase().includes('galaxy') ||
+                              promptInput.value.toLowerCase().includes('universe')) {
+                        outputImage.src = `/api/placeholder/${width}/${height}?text=Space`;
+                    } else if (promptInput.value.toLowerCase().includes('forest') ||
+                              promptInput.value.toLowerCase().includes('tree') ||
+                              promptInput.value.toLowerCase().includes('magical')) {
+                        outputImage.src = `/api/placeholder/${width}/${height}?text=Forest`;
+                    } else {
+                        outputImage.src = `/api/placeholder/${width}/${height}?text=Generated&seed=${seed}`;
+                    }
+                    
+                    // Calculate and display generation time
+                    const endTime = new Date();
+                    const generationTime = (endTime - startTime) / 1000;
+                    infoTime.textContent = `${generationTime.toFixed(1)} seconds`;
+                    
+                    // Hide loading state
+                    loadingDiv.style.display = 'none';
+                    generateBtn.disabled = false;
+                    
+                }, simulatedProcessingTime);
+            });
+            
+            // Initialize with default values
+            infoPrompt.textContent = promptInput.value;
+            infoGuidance.textContent = guidanceScale.value;
+            infoSteps.textContent = stepsSlider.value;
+        });
+    </script>
+</body>
+</html>
